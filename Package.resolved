@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Key",
+        "repositoryURL": "https://github.com/colemcampbell/Key",
+        "state": {
+          "branch": "main",
+          "revision": "d40f65bd77f1ea8c26adfef3c13f8cb3f7df4d27",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
