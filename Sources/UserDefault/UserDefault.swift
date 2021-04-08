@@ -47,7 +47,11 @@ public struct UserDefault<Value> {
     
     public var wrappedValue: Value {
         get {
-            self.store.object(forKey: self.key.rawValue) as? Value ?? self.defaultValue
+            if Value.self == URL.self || Value.self == URL?.self {
+                return self.store.url(forKey: self.key.rawValue) as? Value ?? self.defaultValue
+            } else {
+                return self.store.object(forKey: self.key.rawValue) as? Value ?? self.defaultValue
+            }
         }
         set {
             if
@@ -55,6 +59,8 @@ public struct UserDefault<Value> {
                 newValue.isNil
             {
                 self.store.removeObject(forKey: self.key.rawValue)
+            } else if let url = newValue as? URL {
+                self.store.set(url, forKey: self.key.rawValue)
             } else {
                 self.store.set(newValue, forKey: self.key.rawValue)
             }
@@ -125,10 +131,6 @@ public extension UserDefault {
         self.init(wrappedValue: wrappedValue, key: key, store: store)
     }
     
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<URL> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
     init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<Date> {
         self.init(wrappedValue: wrappedValue, key: key, store: store)
     }
@@ -154,10 +156,6 @@ public extension UserDefault {
     }
     
     init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Data> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, URL> {
         self.init(wrappedValue: wrappedValue, key: key, store: store)
     }
     
@@ -225,10 +223,6 @@ public extension UserDefault where Value: ExpressibleByNilLiteral {
         self.init(wrappedValue: nil, key: key, store: store)
     }
     
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Array<URL>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
     init(_ key: Key, store: UserDefaults = .standard) where Value == Array<Date>? {
         self.init(wrappedValue: nil, key: key, store: store)
     }
@@ -254,10 +248,6 @@ public extension UserDefault where Value: ExpressibleByNilLiteral {
     }
     
     init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Data>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, URL>? {
         self.init(wrappedValue: nil, key: key, store: store)
     }
     
