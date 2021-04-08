@@ -299,7 +299,8 @@ extension UserDefault {
             guard
                 keyPath == self.key.rawValue,
                 object as? UserDefaults == self.store,
-                let value = change?[.newKey] as? Value
+                let change = change,
+                let value = change[.newKey] as? Value
             else { return }
             
             self.subject.send(value)
