@@ -8,10 +8,9 @@
 import Foundation
 import Combine
 import Key
-import AnyOptional
 
 @propertyWrapper
-public struct UserDefault<Value> {
+public struct UserDefault<Value: Codable> {
     
     // MARK: Properties
     
@@ -36,34 +35,27 @@ public struct UserDefault<Value> {
     
     // MARK: Property Wrapper Values
     
-    public var projectedValue: (defaultValue: Value, key: Key, store: UserDefaults, publisher: AnyPublisher<Value, Never>) {
-        (
-            self.defaultValue,
-            self.key,
-            self.store,
-            self.publisher
-        )
+    public var projectedValue: (
+        defaultValue: Value,
+        key: Key,
+        store: UserDefaults,
+        publisher: AnyPublisher<Value, Never>
+    ) {
+        (self.defaultValue, self.key, self.store, self.publisher)
     }
     
     public var wrappedValue: Value {
         get {
-            if Value.self == URL.self || Value.self == URL?.self {
-                return self.store.url(forKey: self.key.rawValue) as? Value ?? self.defaultValue
+            if let data = self.store.data(forKey: self.key.rawValue) {
+                let storedValue = try? JSONDecoder().decode(Value.self, from: data)
+                return storedValue ?? self.defaultValue
             } else {
-                return self.store.object(forKey: self.key.rawValue) as? Value ?? self.defaultValue
+                return self.defaultValue
             }
         }
         set {
-            if
-                let newValue = newValue as? AnyOptional,
-                newValue.isNil
-            {
-                self.store.removeObject(forKey: self.key.rawValue)
-            } else if let url = newValue as? URL {
-                self.store.set(url, forKey: self.key.rawValue)
-            } else {
-                self.store.set(newValue, forKey: self.key.rawValue)
-            }
+            let data = try? JSONEncoder().encode(newValue)
+            self.store.set(data, forKey: self.key.rawValue)
         }
     }
 }
@@ -71,99 +63,7 @@ public struct UserDefault<Value> {
 // MARK: - Public Initializers
 
 public extension UserDefault {
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value: RawRepresentable, Value.RawValue == Int {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value: RawRepresentable, Value.RawValue == String {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Int {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Double {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Float {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == String {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Data {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == URL {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Date {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Bool {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<Int> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<Double> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<Float> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<String> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<Data> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<Date> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Array<Bool> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Int> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Double> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Float> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, String> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Data> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Date> {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
-    }
-    
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Bool> {
+    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) {
         self.init(wrappedValue: wrappedValue, key: key, store: store)
     }
 }
@@ -171,91 +71,7 @@ public extension UserDefault {
 // MARK: - Public Initializers for Optional Value
 
 public extension UserDefault where Value: ExpressibleByNilLiteral {
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Int? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Double? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Float? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == String? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Data? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == URL? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Date? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Bool? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Array<Int>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Array<Double>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Array<Float>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Array<String>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Array<Data>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Array<Date>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Array<Bool>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Int>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Double>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Float>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, String>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Data>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Date>? {
-        self.init(wrappedValue: nil, key: key, store: store)
-    }
-    
-    init(_ key: Key, store: UserDefaults = .standard) where Value == Dictionary<String, Bool>? {
+    init(_ key: Key, store: UserDefaults = .standard) {
         self.init(wrappedValue: nil, key: key, store: store)
     }
 }
@@ -290,7 +106,8 @@ extension UserDefault {
                 keyPath == self.key.rawValue,
                 object as? UserDefaults == self.store,
                 let change = change,
-                let value = change[.newKey] as? Value
+                let data = change[.newKey] as? Data,
+                let value = try? JSONDecoder().decode(Value.self, from: data)
             else { return }
             
             self.subject.send(value)
