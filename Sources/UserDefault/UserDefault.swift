@@ -106,7 +106,8 @@ extension UserDefault {
                 keyPath == self.key.rawValue,
                 object as? UserDefaults == self.store,
                 let change = change,
-                let value = change[.newKey] as? Value
+                let data = change[.newKey] as? Data,
+                let value = try? JSONDecoder().decode(Value.self, from: data)
             else { return }
             
             self.subject.send(value)
