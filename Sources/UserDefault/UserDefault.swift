@@ -150,7 +150,6 @@ extension UserDefault {
                 Value.self == Double.self || Value.self == Double?.self ||
                 Value.self == String.self || Value.self == String?.self ||
                 Value.self == Data.self || Value.self == Data?.self ||
-                Value.self == URL.self || Value.self == URL?.self ||
                 Value.self == Bool.self || Value.self == Bool?.self
             {
                 self.subject.send(change[.newKey] as! Value)
