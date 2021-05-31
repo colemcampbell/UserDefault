@@ -153,13 +153,9 @@ extension UserDefault {
                 Value.self == Data.self || Value.self == Data?.self ||
                 Value.self == Bool.self || Value.self == Bool?.self
             {
-                self.subject.send(newValue as! Value)
-            } else if
-                Value.self == URL.self || Value.self == URL?.self,
-                let data = newValue as? Data,
-                let url = URL(dataRepresentation: data, relativeTo: nil)
-            {
-                self.subject.send(url as! Value)
+                self.subject.send(newValue as? Value ?? self.defaultValue)
+            } else if Value.self == URL.self || Value.self == URL?.self {
+                self.subject.send((newValue as? URL?) as? Value ?? self.defaultValue)
             } else {
                 self.subject.send(self.value(from: newValue as? Data))
             }
