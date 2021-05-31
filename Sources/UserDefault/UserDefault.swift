@@ -142,11 +142,21 @@ extension UserDefault {
             guard
                 keyPath == self.key.rawValue,
                 object as? UserDefaults == self.userDefaults,
-                let change = change,
-                let data = change[.newKey] as? Data
+                let change = change
             else { return }
             
-            self.subject.send(self.value(from: data))
+            if
+                Value.self == Int.self || Value.self == Int?.self ||
+                Value.self == Double.self || Value.self == Double?.self ||
+                Value.self == String.self || Value.self == String?.self ||
+                Value.self == Data.self || Value.self == Data?.self ||
+                Value.self == URL.self || Value.self == URL?.self ||
+                Value.self == Bool.self || Value.self == Bool?.self
+            {
+                self.subject.send(change[.newKey] as! Value)
+            } else if let data = change[.newKey] as? Data {
+                self.subject.send(self.value(from: data))
+            }
         }
         
         private func value(from data: Data?) -> Value {
