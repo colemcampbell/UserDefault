@@ -94,18 +94,16 @@ extension UserDefault {
             }
             
             set {
-                if Value.self == Int.self || Value.self == Int?.self {
-                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
-                } else if Value.self == Double.self || Value.self == Double?.self {
-                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
-                } else if Value.self == String.self || Value.self == String?.self {
-                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
-                } else if Value.self == Data.self || Value.self == Data?.self {
+                if
+                    Value.self == Int.self || Value.self == Int?.self ||
+                    Value.self == Double.self || Value.self == Double?.self ||
+                    Value.self == String.self || Value.self == String?.self ||
+                    Value.self == Data.self || Value.self == Data?.self ||
+                    Value.self == Bool.self || Value.self == Bool?.self
+                {
                     self.userDefaults.set(newValue, forKey: self.key.rawValue)
                 } else if Value.self == URL.self || Value.self == URL?.self {
-                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
-                } else if Value.self == Bool.self || Value.self == Bool?.self {
-                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                    self.userDefaults.set(newValue as! URL?, forKey: self.key.rawValue)
                 } else {
                     self.userDefaults.set(self.data(from: newValue), forKey: self.key.rawValue)
                 }
