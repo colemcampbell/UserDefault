@@ -7,114 +7,135 @@
 
 import Foundation
 import Combine
-import Key
 
 @propertyWrapper
 public struct UserDefault<Value: Codable> {
     
     // MARK: Properties
     
-    private let defaultValue: Value
-    private let key: Key
-    private let store: UserDefaults
-    
-    private let observer: Observer
+    private let store: Store
     
     private var publisher: AnyPublisher<Value, Never> {
-        self.observer.publisher
+        self.store.publisher
     }
     
     // MARK: Initializers
     
-    private init(wrappedValue: Value, key: Key, store: UserDefaults) {
-        self.defaultValue = wrappedValue
-        self.key = key
-        self.store = store
-        self.observer = Observer(key: key, store: store)
+    private init(wrappedValue: Value, key: UserDefaultKey, userDefaults: UserDefaults) {
+        self.store = Store(defaultValue: wrappedValue, key: key, userDefaults: userDefaults)
     }
     
     // MARK: Property Wrapper Values
     
     public var projectedValue: (
         defaultValue: Value,
-        key: Key,
-        store: UserDefaults,
+        key: UserDefaultKey,
+        userDefaults: UserDefaults,
         publisher: AnyPublisher<Value, Never>
     ) {
-        (self.defaultValue, self.key, self.store, self.publisher)
+        (self.store.defaultValue, self.store.key, self.store.userDefaults, self.publisher)
     }
     
     public var wrappedValue: Value {
         get {
-            if let data = self.store.data(forKey: self.key.rawValue) {
-                let storedValue = try? JSONDecoder().decode(Value.self, from: data)
-                return storedValue ?? self.defaultValue
-            } else {
-                return self.defaultValue
-            }
+            self.store.value
         }
+        
         set {
-            let data = try? JSONEncoder().encode(newValue)
-            self.store.set(data, forKey: self.key.rawValue)
+            self.store.value = newValue
         }
     }
 }
 
 // MARK: - Public Initializers
 
-public extension UserDefault {
-    init(wrappedValue: Value, _ key: Key, store: UserDefaults = .standard) {
-        self.init(wrappedValue: wrappedValue, key: key, store: store)
+extension UserDefault {
+    public init(wrappedValue: Value, _ key: UserDefaultKey, userDefaults: UserDefaults = .standard) {
+        self.init(wrappedValue: wrappedValue, key: key, userDefaults: userDefaults)
     }
 }
 
 // MARK: - Public Initializers for Optional Value
 
-public extension UserDefault where Value: ExpressibleByNilLiteral {
-    init(_ key: Key, store: UserDefaults = .standard) {
-        self.init(wrappedValue: nil, key: key, store: store)
+extension UserDefault where Value: ExpressibleByNilLiteral {
+    public init(_ key: UserDefaultKey, userDefaults: UserDefaults = .standard) {
+        self.init(wrappedValue: nil, key: key, userDefaults: userDefaults)
     }
 }
 
-// MARK: - Observer
+// MARK: - Store
 
 extension UserDefault {
-    private class Observer: NSObject {
-        let key: Key
-        let store: UserDefaults
+    private class Store: NSObject {
+        let defaultValue: Value
+        let key: UserDefaultKey
+        let userDefaults: UserDefaults
+        
         let publisher: AnyPublisher<Value, Never>
+        private let subject: CurrentValueSubject<Value, Never>
         
-        private let subject = PassthroughSubject<Value, Never>()
+        var value: Value {
+            get {
+                self.value(from: self.userDefaults.data(forKey: self.key.rawValue))
+            }
+            
+            set {
+                self.userDefaults.set(self.data(from: newValue), forKey: self.key.rawValue)
+            }
+        }
         
-        init(key: Key, store: UserDefaults) {
+        init(defaultValue: Value, key: UserDefaultKey, userDefaults: UserDefaults) {
+            self.defaultValue = defaultValue
             self.key = key
-            self.store = store
+            self.userDefaults = userDefaults
+            
+            self.subject = CurrentValueSubject(self.defaultValue)
             self.publisher = self.subject.eraseToAnyPublisher()
             
             super.init()
             
-            self.store.addObserver(
-                self,
-                forKeyPath: self.key.rawValue,
-                options: [.initial, .new],
-                context: nil
-            )
-        }
-        
-        override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
-            guard
-                keyPath == self.key.rawValue,
-                object as? UserDefaults == self.store,
-                let change = change,
-                let data = change[.newKey] as? Data,
-                let value = try? JSONDecoder().decode(Value.self, from: data)
-            else { return }
-            
-            self.subject.send(value)
+            self.userDefaults
+                .addObserver(
+                    self,
+                    forKeyPath: self.key.rawValue,
+                    options: [.initial, .new],
+                    context: nil
+                )
         }
         
         deinit {
-            self.store.removeObserver(self, forKeyPath: self.key.rawValue, context: nil)
+            self.userDefaults.removeObserver(self, forKeyPath: self.key.rawValue, context: nil)
+        }
+        
+        override func observeValue(
+            forKeyPath keyPath: String?,
+            of object: Any?,
+            change: [NSKeyValueChangeKey: Any]?,
+            context: UnsafeMutableRawPointer?
+        ) {
+            guard
+                keyPath == self.key.rawValue,
+                object as? UserDefaults == self.userDefaults,
+                let change = change,
+                let data = change[.newKey] as? Data
+            else { return }
+            
+            self.subject.send(self.value(from: data))
+        }
+        
+        private func value(from data: Data?) -> Value {
+            if
+                let data = data,
+                let value = try? JSONDecoder().decode(Value.self, from: data)
+            {
+                return value
+            } else {
+                return self.defaultValue
+            }
+        }
+        
+        private func data(from value: Value) -> Data? {
+            try? JSONEncoder().encode(value)
         }
     }
 }
