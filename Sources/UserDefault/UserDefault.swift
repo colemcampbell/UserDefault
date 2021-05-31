@@ -76,11 +76,39 @@ extension UserDefault {
         
         var value: Value {
             get {
-                self.value(from: self.userDefaults.data(forKey: self.key.rawValue))
+                if Value.self == Int.self || Value.self == Int?.self {
+                    return self.userDefaults.integer(forKey: self.key.rawValue) as! Value
+                } else if Value.self == Double.self || Value.self == Double?.self {
+                    return self.userDefaults.double(forKey: self.key.rawValue) as! Value
+                } else if Value.self == String.self || Value.self == String?.self {
+                    return self.userDefaults.string(forKey: self.key.rawValue) as! Value
+                } else if Value.self == Data.self || Value.self == Data?.self {
+                    return self.userDefaults.data(forKey: self.key.rawValue) as! Value
+                } else if Value.self == URL.self || Value.self == URL?.self {
+                    return self.userDefaults.url(forKey: self.key.rawValue) as! Value
+                } else if Value.self == Bool.self || Value.self == Bool?.self {
+                    return self.userDefaults.bool(forKey: self.key.rawValue) as! Value
+                } else {
+                    return self.value(from: self.userDefaults.data(forKey: self.key.rawValue))
+                }
             }
             
             set {
-                self.userDefaults.set(self.data(from: newValue), forKey: self.key.rawValue)
+                if Value.self == Int.self || Value.self == Int?.self {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if Value.self == Double.self || Value.self == Double?.self {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if Value.self == String.self || Value.self == String?.self {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if Value.self == Data.self || Value.self == Data?.self {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if Value.self == URL.self || Value.self == URL?.self {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if Value.self == Bool.self || Value.self == Bool?.self {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else {
+                    self.userDefaults.set(self.data(from: newValue), forKey: self.key.rawValue)
+                }
             }
         }
         
