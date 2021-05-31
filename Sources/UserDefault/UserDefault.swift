@@ -84,9 +84,9 @@ extension UserDefault {
                     return self.userDefaults.string(forKey: self.key.rawValue) as! Value
                 } else if Value.self == Data.self || Value.self == Data?.self {
                     return self.userDefaults.data(forKey: self.key.rawValue) as! Value
-                } /* else if Value.self == URL.self || Value.self == URL?.self {
+                } else if Value.self == URL.self || Value.self == URL?.self {
                     return self.userDefaults.url(forKey: self.key.rawValue) as! Value
-                }*/ else if Value.self == Bool.self || Value.self == Bool?.self {
+                } else if Value.self == Bool.self || Value.self == Bool?.self {
                     return self.userDefaults.bool(forKey: self.key.rawValue) as! Value
                 } else {
                     return self.value(from: self.userDefaults.data(forKey: self.key.rawValue))
@@ -102,9 +102,9 @@ extension UserDefault {
                     Value.self == Bool.self || Value.self == Bool?.self
                 {
                     self.userDefaults.set(newValue, forKey: self.key.rawValue)
-                } /*else if Value.self == URL.self || Value.self == URL?.self {
+                } else if Value.self == URL.self || Value.self == URL?.self {
                     self.userDefaults.set(newValue as! URL?, forKey: self.key.rawValue)
-                }*/ else {
+                } else {
                     self.userDefaults.set(self.data(from: newValue), forKey: self.key.rawValue)
                 }
             }
@@ -154,6 +154,8 @@ extension UserDefault {
                 Value.self == Bool.self || Value.self == Bool?.self
             {
                 self.subject.send(newValue as? Value ?? self.defaultValue)
+            } else if Value.self == URL.self || Value.self == URL?.self {
+                self.subject.send(self.value)
             } else {
                 self.subject.send(self.value(from: newValue as? Data))
             }
