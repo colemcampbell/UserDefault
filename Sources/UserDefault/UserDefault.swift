@@ -91,7 +91,7 @@ extension UserDefault {
                 } else if StoredValue.self == Bool.self || StoredValue.self == Bool?.self {
                     storedValue = self.userDefaults.bool(forKey: self.key.rawValue) as? StoredValue
                 } else {
-                    storedValue = self.value(from: self.userDefaults.data(forKey: self.key.rawValue))
+                    storedValue = self.decode(self.userDefaults.data(forKey: self.key.rawValue))
                 }
                 
                 return storedValue ?? self.defaultValue
@@ -108,7 +108,7 @@ extension UserDefault {
                 {
                     self.userDefaults.set(newValue, forKey: self.key.rawValue)
                 } else {
-                    self.userDefaults.set(self.data(from: newValue), forKey: self.key.rawValue)
+                    self.userDefaults.set(self.encode(newValue), forKey: self.key.rawValue)
                 }
             }
         }
@@ -153,14 +153,14 @@ extension UserDefault {
                 self.subject.send(newValue)
             } else if StoredValue.self == URL.self || StoredValue.self == URL?.self {
                 self.subject.send(self.storedValue)
-            } else if let newValue = self.value(from: newValue as? Data) {
+            } else if let newValue = self.decode(newValue as? Data) {
                 self.subject.send(newValue)
             } else {
                 self.subject.send(self.defaultValue)
             }
         }
         
-        private func value(from data: Data?) -> StoredValue? {
+        private func decode(_ data: Data?) -> StoredValue? {
             if
                 let data = data,
                 let value = try? JSONDecoder().decode(StoredValue.self, from: data)
@@ -171,7 +171,7 @@ extension UserDefault {
             }
         }
         
-        private func data(from value: StoredValue) -> Data? {
+        private func encode(_ value: StoredValue) -> Data? {
             try? JSONEncoder().encode(value)
         }
     }
