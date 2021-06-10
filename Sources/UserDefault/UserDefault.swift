@@ -9,40 +9,40 @@ import Foundation
 import Combine
 
 @propertyWrapper
-public struct UserDefault<Value: Codable> {
+public struct UserDefault<StoredValue: Codable> {
     
     // MARK: Properties
     
     private let store: Store
     
-    private var publisher: AnyPublisher<Value, Never> {
+    private var publisher: AnyPublisher<StoredValue, Never> {
         self.store.publisher
     }
     
     // MARK: Initializers
     
-    private init(wrappedValue: Value, key: UserDefaultKey, userDefaults: UserDefaults) {
+    private init(wrappedValue: StoredValue, key: UserDefaultKey, userDefaults: UserDefaults) {
         self.store = Store(defaultValue: wrappedValue, key: key, userDefaults: userDefaults)
     }
     
     // MARK: Property Wrapper Values
     
     public var projectedValue: (
-        defaultValue: Value,
+        defaultValue: StoredValue,
         key: UserDefaultKey,
         userDefaults: UserDefaults,
-        publisher: AnyPublisher<Value, Never>
+        publisher: AnyPublisher<StoredValue, Never>
     ) {
         (self.store.defaultValue, self.store.key, self.store.userDefaults, self.publisher)
     }
     
-    public var wrappedValue: Value {
+    public var wrappedValue: StoredValue {
         get {
-            self.store.value
+            self.store.storedValue
         }
         
         set {
-            self.store.value = newValue
+            self.store.storedValue = newValue
         }
     }
 }
@@ -50,14 +50,14 @@ public struct UserDefault<Value: Codable> {
 // MARK: - Public Initializers
 
 extension UserDefault {
-    public init(wrappedValue: Value, _ key: UserDefaultKey, userDefaults: UserDefaults = .standard) {
+    public init(wrappedValue: StoredValue, _ key: UserDefaultKey, userDefaults: UserDefaults = .standard) {
         self.init(wrappedValue: wrappedValue, key: key, userDefaults: userDefaults)
     }
 }
 
 // MARK: - Public Initializers for Optional Value
 
-extension UserDefault where Value: ExpressibleByNilLiteral {
+extension UserDefault where StoredValue: ExpressibleByNilLiteral {
     public init(_ key: UserDefaultKey, userDefaults: UserDefaults = .standard) {
         self.init(wrappedValue: nil, key: key, userDefaults: userDefaults)
     }
@@ -67,50 +67,53 @@ extension UserDefault where Value: ExpressibleByNilLiteral {
 
 extension UserDefault {
     private class Store: NSObject {
-        let defaultValue: Value
+        let defaultValue: StoredValue
         let key: UserDefaultKey
         let userDefaults: UserDefaults
         
-        let publisher: AnyPublisher<Value, Never>
-        private let subject: CurrentValueSubject<Value, Never>
+        let publisher: AnyPublisher<StoredValue, Never>
+        private let subject: CurrentValueSubject<StoredValue, Never>
         
-        var value: Value {
+        var storedValue: StoredValue {
             get {
-                if Value.self == Int.self || Value.self == Int?.self {
-                    return self.userDefaults.integer(forKey: self.key.rawValue) as! Value
-                } else if Value.self == Double.self || Value.self == Double?.self {
-                    return self.userDefaults.double(forKey: self.key.rawValue) as! Value
-                } else if Value.self == String.self || Value.self == String?.self {
-                    return self.userDefaults.string(forKey: self.key.rawValue) as! Value
-                } else if Value.self == Data.self || Value.self == Data?.self {
-                    return self.userDefaults.data(forKey: self.key.rawValue) as! Value
-                } else if Value.self == URL.self || Value.self == URL?.self {
-                    return self.userDefaults.url(forKey: self.key.rawValue) as! Value
-                } else if Value.self == Bool.self || Value.self == Bool?.self {
-                    return self.userDefaults.bool(forKey: self.key.rawValue) as! Value
+                let storedValue: StoredValue?
+                
+                if StoredValue.self == Int.self || StoredValue.self == Int?.self {
+                    storedValue = self.userDefaults.integer(forKey: self.key.rawValue) as? StoredValue
+                } else if StoredValue.self == Double.self || StoredValue.self == Double?.self {
+                    storedValue = self.userDefaults.double(forKey: self.key.rawValue) as? StoredValue
+                } else if StoredValue.self == String.self || StoredValue.self == String?.self {
+                    storedValue = self.userDefaults.string(forKey: self.key.rawValue) as? StoredValue
+                } else if StoredValue.self == Data.self || StoredValue.self == Data?.self {
+                    storedValue = self.userDefaults.data(forKey: self.key.rawValue) as? StoredValue
+                } else if StoredValue.self == URL.self || StoredValue.self == URL?.self {
+                    storedValue = self.userDefaults.url(forKey: self.key.rawValue) as? StoredValue
+                } else if StoredValue.self == Bool.self || StoredValue.self == Bool?.self {
+                    storedValue = self.userDefaults.bool(forKey: self.key.rawValue) as? StoredValue
                 } else {
-                    return self.value(from: self.userDefaults.data(forKey: self.key.rawValue))
+                    storedValue = self.value(from: self.userDefaults.data(forKey: self.key.rawValue))
                 }
+                
+                return storedValue ?? self.defaultValue
             }
             
             set {
                 if
-                    Value.self == Int.self || Value.self == Int?.self ||
-                    Value.self == Double.self || Value.self == Double?.self ||
-                    Value.self == String.self || Value.self == String?.self ||
-                    Value.self == Data.self || Value.self == Data?.self ||
-                    Value.self == Bool.self || Value.self == Bool?.self
+                    StoredValue.self == Int.self || StoredValue.self == Int?.self ||
+                    StoredValue.self == Double.self || StoredValue.self == Double?.self ||
+                    StoredValue.self == String.self || StoredValue.self == String?.self ||
+                    StoredValue.self == Data.self || StoredValue.self == Data?.self ||
+                    StoredValue.self == URL.self || StoredValue.self == URL?.self ||
+                    StoredValue.self == Bool.self || StoredValue.self == Bool?.self
                 {
                     self.userDefaults.set(newValue, forKey: self.key.rawValue)
-                } else if Value.self == URL.self || Value.self == URL?.self {
-                    self.userDefaults.set(newValue as! URL?, forKey: self.key.rawValue)
                 } else {
                     self.userDefaults.set(self.data(from: newValue), forKey: self.key.rawValue)
                 }
             }
         }
         
-        init(defaultValue: Value, key: UserDefaultKey, userDefaults: UserDefaults) {
+        init(defaultValue: StoredValue, key: UserDefaultKey, userDefaults: UserDefaults) {
             self.defaultValue = defaultValue
             self.key = key
             self.userDefaults = userDefaults
@@ -146,33 +149,29 @@ extension UserDefault {
                 let newValue = change[.newKey]
             else { return }
             
-            if
-                Value.self == Int.self || Value.self == Int?.self ||
-                Value.self == Double.self || Value.self == Double?.self ||
-                Value.self == String.self || Value.self == String?.self ||
-                Value.self == Data.self || Value.self == Data?.self ||
-                Value.self == Bool.self || Value.self == Bool?.self
-            {
-                self.subject.send(newValue as? Value ?? self.defaultValue)
-            } else if Value.self == URL.self || Value.self == URL?.self {
-                self.subject.send(self.value)
+            if let newValue = newValue as? StoredValue {
+                self.subject.send(newValue)
+            } else if StoredValue.self == URL.self || StoredValue.self == URL?.self {
+                self.subject.send(self.storedValue)
+            } else if let newValue = self.value(from: newValue as? Data) {
+                self.subject.send(newValue)
             } else {
-                self.subject.send(self.value(from: newValue as? Data))
+                self.subject.send(self.defaultValue)
             }
         }
         
-        private func value(from data: Data?) -> Value {
+        private func value(from data: Data?) -> StoredValue? {
             if
                 let data = data,
-                let value = try? JSONDecoder().decode(Value.self, from: data)
+                let value = try? JSONDecoder().decode(StoredValue.self, from: data)
             {
                 return value
             } else {
-                return self.defaultValue
+                return nil
             }
         }
         
-        private func data(from value: Value) -> Data? {
+        private func data(from value: StoredValue) -> Data? {
             try? JSONEncoder().encode(value)
         }
     }
