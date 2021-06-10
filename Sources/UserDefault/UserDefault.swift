@@ -103,9 +103,10 @@ extension UserDefault {
                     StoredValue.self == Double.self || StoredValue.self == Double?.self ||
                     StoredValue.self == String.self || StoredValue.self == String?.self ||
                     StoredValue.self == Data.self || StoredValue.self == Data?.self ||
-                    StoredValue.self == URL.self || StoredValue.self == URL?.self ||
                     StoredValue.self == Bool.self || StoredValue.self == Bool?.self
                 {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if let newValue = newValue as? URL {
                     self.userDefaults.set(newValue, forKey: self.key.rawValue)
                 } else {
                     self.userDefaults.set(self.encode(newValue), forKey: self.key.rawValue)
