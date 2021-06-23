@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import AnyOptional
 
 @propertyWrapper
 public struct UserDefault<StoredValue: Codable> {
@@ -99,14 +100,21 @@ extension UserDefault {
             
             set {
                 if
-                    StoredValue.self == Int.self || StoredValue.self == Int?.self ||
-                    StoredValue.self == Double.self || StoredValue.self == Double?.self ||
-                    StoredValue.self == String.self || StoredValue.self == String?.self ||
-                    StoredValue.self == Data.self || StoredValue.self == Data?.self ||
-                    StoredValue.self == Bool.self || StoredValue.self == Bool?.self
+                    let optionalValue = newValue as? AnyOptional,
+                    optionalValue.isNil
                 {
+                    self.userDefaults.removeObject(forKey: self.key.rawValue)
+                } else if let newValue = newValue as? Int {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if let newValue = newValue as? Double {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if let newValue = newValue as? String {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if let newValue = newValue as? Data {
                     self.userDefaults.set(newValue, forKey: self.key.rawValue)
                 } else if let newValue = newValue as? URL {
+                    self.userDefaults.set(newValue, forKey: self.key.rawValue)
+                } else if let newValue = newValue as? Bool {
                     self.userDefaults.set(newValue, forKey: self.key.rawValue)
                 } else {
                     self.userDefaults.set(self.encode(newValue), forKey: self.key.rawValue)
@@ -145,20 +153,12 @@ extension UserDefault {
         ) {
             guard
                 keyPath == self.key.rawValue,
-                object as? UserDefaults == self.userDefaults,
+                object as? UserDefaults === self.userDefaults,
                 let change = change,
-                let newValue = change[.newKey]
+                let _ = change[.newKey]
             else { return }
             
-            if let newValue = newValue as? StoredValue {
-                self.subject.send(newValue)
-            } else if StoredValue.self == URL.self || StoredValue.self == URL?.self {
-                self.subject.send(self.storedValue)
-            } else if let newValue = self.decode(newValue as? Data) {
-                self.subject.send(newValue)
-            } else {
-                self.subject.send(self.defaultValue)
-            }
+            self.subject.send(self.storedValue)
         }
         
         private func decode(_ data: Data?) -> StoredValue? {
