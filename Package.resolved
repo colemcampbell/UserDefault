@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "AnyOptional",
+        "repositoryURL": "https://github.com/colemcampbell/AnyOptional",
+        "state": {
+          "branch": "main",
+          "revision": "397510873515fec9c7c1ae5b3ee96c3cf5283969",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
